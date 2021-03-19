@@ -7,24 +7,41 @@ import seaborn as sns
 import numpy as np
 import env
 
+import sklearn
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
+
 
 
 def get_connection(db, user=env.user, host=env.host, password=env.password):
     return f'mysql+pymysql://{user}:{password}@{host}/{db}'
     
-    
+
+## you will need to use the properties_2017 and predictions_2017 tables.
+
+## square feet of the house ("living square feet"), number of bedrooms, number of bathrooms, the assess value of the house by the tax appraisal district ('taxvaluedollarcnt'...this will be your target variable in the project), and 2-3 other variables
+
+## may, june, july or august (date is in predictions_2017 table)
+
+## single unit property values
+
 sql = '''
-select parcelid, calculatedfinishedsquarefeet as square_feet, bedroomcnt as bedrooms, bathroomcnt as bathrooms, taxamount as taxes, taxvaluedollarcnt as tax_value, yearbuilt, regionidcounty as county, lotsizesquarefeet as lot_size
+select parcelid, calculatedfinishedsquarefeet as square_feet, bedroomcnt as bedrooms, bathroomcnt as bathrooms, taxamount as taxes, yearbuilt, regionidcounty as county, lotsizesquarefeet as lot_size, taxvaluedollarcnt as tax_value
 from properties_2017
 join predictions_2017 using(parcelid)
-where transactiondate between "2017-05-01" and "2017-06-30"
-and unitcnt = 1;
+where transactiondate between "2017-05-01" and "2017-08-31"
+AND propertylandusetypeid > 250
+AND propertylandusetypeid < 280 
+AND propertylandusetypeid != 270 
+AND propertylandusetypeid != 271
+OR  unitcnt = 1;
 '''
 
 
 def wrangle_zillow():
     data = pd.read_csv("zillow.csv")
+    
+    data = data.drop(columns = 'Unnamed: 0')
     
     data = data.set_index("parcelid")
     
@@ -48,5 +65,44 @@ def split(df, stratify_by=None):
         train, validate = train_test_split(train, test_size=.3, random_state=319, stratify=train[stratify_by])
     
     return train, validate, test
+
+
+def seperate_y(train, validate, test):
+    X_train = train.drop(columns=['tax_value'])
+    y_train = train.tax_value
+
+    X_validate = validate.drop(columns=['tax_value'])
+    y_validate = validate.tax_value
+
+    X_test = test.drop(columns=['tax_value'])
+    y_test = test.tax_value
+    
+    return X_train, y_train, X_validate, y_validate, X_test, y_test
+
+
+def scale_data(train, validate, test):
+    
+    '''
+    This function will scale numeric data using Min Max transform after 
+    it has already been split into train, validate, and test.
+    '''
+    
+    # Make the thing
+    scaler = sklearn.preprocessing.MinMaxScaler()
+    
+    # We fit on the training data
+    # we only .fit on the training data
+    scaler.fit(train)
+    
+    train_scaled = scaler.transform(train)
+    validate_scaled = scaler.transform(validate)
+    test_scaled = scaler.transform(test)
+    
+    # turn the numpy arrays into dataframes
+    train_scaled = pd.DataFrame(train_scaled, columns=train.columns)
+    validate_scaled = pd.DataFrame(validate_scaled, columns=train.columns)
+    test_scaled = pd.DataFrame(test_scaled, columns=train.columns)
+    
+    return train_scaled, validate_scaled, test_scaled
 
 
