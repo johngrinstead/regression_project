@@ -29,20 +29,20 @@ def explore_univariate(train, cat_vars, quant_vars):
         
 def explore_bivariate(train, target, cat_vars, quant_vars):
     for cat in cat_vars:
-        explore_bivariate_categorical(train, 'survived', cat)
+        explore_bivariate_categorical(train, 'tax_value', cat)
     for quant in quant_vars:
-        explore_bivariate_quant(train, 'survived', quant)
+        explore_bivariate_quant(train, 'tax_value', quant)
 
 def explore_multivariate(train, target, cat_vars, quant_vars):
     '''
     '''
     plot_swarm_grid_with_color(train, target, cat_vars, quant_vars)
     plt.show()
-    violin = plot_violin_grid_with_color(train, target, cat_vars, quant_vars)
+    violin = plot_violin_grid_with_color(train, 'tax_value', cat_vars, quant_vars)
     plt.show()
-    pair = sns.pairplot(data=train, vars=quant_vars, hue='survived')
+    pair = sns.pairplot(data=train, vars=quant_vars)
     plt.show()
-    plot_all_continuous_vars(train, 'survived', quant_vars)
+    plot_all_continuous_vars(train, 'tax_value', quant_vars)
     plt.show()    
 
 
@@ -212,3 +212,33 @@ def plot_swarm_grid_with_color(train, target, cat_vars, quant_vars):
             ax[i].set_ylabel(quant)
             ax[i].set_title(cat)
         plt.show()
+        
+#############################################################################################################
+        
+
+def correlation_exploration(train, x_string, y_string):
+    '''
+    This function takes in a df, a string for an x-axis variable in the df, 
+    and a string for a y-axis variable in the df and displays a scatter plot, the r-
+    squared value, and the p-value. It explores the correlation between input the x 
+    and y variables.
+    '''
+    r, p = stats.pearsonr(train[x_string], train[y_string])
+    df.plot.scatter(x_string, y_string)
+    plt.title(f"{x_string}'s Relationship with {y_string}")
+    print(f'The p-value is: {p}. There is {round(p,3)}% chance that we see these results by chance.')
+    print(f'r = {round(r, 2)}')
+    plt.show()
+    
+    
+def plot_variable_pairs_regline(train, hue=None):
+    '''
+    This function takes in a df and default hue=None and displays a pairplot
+    with a red regression line.
+    '''
+    plot_kws={'line_kws':{'color':'red'}, 
+              'scatter_kws': {'alpha': 0.7}}
+    sns.pairplot(train, hue=hue, kind="reg", plot_kws={'line_kws':{'color':'red'}, 
+                                                    'scatter_kws': {'alpha': 0.1}})
+    
+    

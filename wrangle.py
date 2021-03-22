@@ -26,7 +26,7 @@ def get_connection(db, user=env.user, host=env.host, password=env.password):
 ## single unit property values
 
 sql = '''
-select parcelid, calculatedfinishedsquarefeet as square_feet, bedroomcnt as bedrooms, bathroomcnt as bathrooms, taxamount as taxes, yearbuilt, regionidcounty as county, lotsizesquarefeet as lot_size, taxvaluedollarcnt as tax_value
+select parcelid, calculatedfinishedsquarefeet as square_feet, bedroomcnt as bedrooms, bathroomcnt as bathrooms, yearbuilt, fips, lotsizesquarefeet as lot_size, taxvaluedollarcnt as tax_value
 from properties_2017
 join predictions_2017 using(parcelid)
 where transactiondate between "2017-05-01" and "2017-08-31"
@@ -41,12 +41,37 @@ OR  unitcnt = 1;
 def wrangle_zillow():
     data = pd.read_csv("zillow.csv")
     
-    data = data.drop(columns = 'Unnamed: 0')
+    data['house_age'] = (2021 - data.yearbuilt)
+    
+    data = data.drop(columns = ['Unnamed: 0', 'yearbuilt'])
+    
+    ## remove outliers 
+
+    index3500 = data.loc[data['square_feet'] >= 3500].index
+    data.drop(index3500 ,  inplace=True)
+    
+    index_tax_value = data.loc[data['tax_value'] >= 5000000].index
+    data.drop(index_tax_value ,  inplace=True)
+    
+    index_lot_size = data.loc[data['lot_size'] >= 23778.0].index
+    data.drop(index_lot_size ,  inplace=True)
+    
+    index_bedrooms = data.loc[data['bedrooms'] == 0].index
+    data.drop(index_bedrooms , inplace=True)
+    
+    index_bathrooms = data.loc[data['bathrooms'] == 0].index
+    data.drop(index_bathrooms , inplace=True)
     
     data = data.set_index("parcelid")
     
     data = data.dropna()
     # remove all NaN values
+    
+    # Remove decimal
+    data['bedrooms'] = data['bedrooms'].astype(int)
+    data['bathrooms'] = data['bathrooms'].astype(int)
+    data['fips'] = data['fips'].astype(int)
+    data['house_age'] = data['house_age'].astype(int)
     
     return data
 
