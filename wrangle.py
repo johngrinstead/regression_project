@@ -50,7 +50,7 @@ def wrangle_zillow():
     index3500 = data.loc[data['square_feet'] >= 3500].index
     data.drop(index3500 ,  inplace=True)
     
-    index_tax_value = data.loc[data['tax_value'] >= 5000000].index
+    index_tax_value = data.loc[data['tax_value'] >= 1680000].index
     data.drop(index_tax_value ,  inplace=True)
     
     index_lot_size = data.loc[data['lot_size'] >= 23778.0].index
