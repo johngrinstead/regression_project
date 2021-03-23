@@ -26,7 +26,7 @@ def get_connection(db, user=env.user, host=env.host, password=env.password):
 ## single unit property values
 
 sql = '''
-select parcelid, calculatedfinishedsquarefeet as square_feet, bedroomcnt as bedrooms, bathroomcnt as bathrooms, yearbuilt, fips, lotsizesquarefeet as lot_size, taxvaluedollarcnt as tax_value
+select parcelid, calculatedfinishedsquarefeet as square_feet, bedroomcnt as bedrooms, bathroomcnt as bathrooms, yearbuilt, taxvaluedollarcnt as tax_value
 from properties_2017
 join predictions_2017 using(parcelid)
 where transactiondate between "2017-05-01" and "2017-08-31"
@@ -43,18 +43,17 @@ def wrangle_zillow():
     
     data['house_age'] = (2021 - data.yearbuilt)
     
-    data = data.drop(columns = ['Unnamed: 0', 'yearbuilt'])
+    data = data.drop(columns = ['Unnamed: 0', 'yearbuilt', 'fips', 'lot_size'])
+    # 'fips' and 'lot_size' were removed after being found to be innefective predictors 
     
-    ## remove outliers 
+    
+    ## remove outliers, filter out extreme values and remove 'homes' with no rooms
 
     index3500 = data.loc[data['square_feet'] >= 3500].index
     data.drop(index3500 ,  inplace=True)
     
     index_tax_value = data.loc[data['tax_value'] >= 1680000].index
     data.drop(index_tax_value ,  inplace=True)
-    
-    index_lot_size = data.loc[data['lot_size'] >= 23778.0].index
-    data.drop(index_lot_size ,  inplace=True)
     
     index_bedrooms = data.loc[data['bedrooms'] == 0].index
     data.drop(index_bedrooms , inplace=True)
@@ -70,7 +69,6 @@ def wrangle_zillow():
     # Remove decimal
     data['bedrooms'] = data['bedrooms'].astype(int)
     data['bathrooms'] = data['bathrooms'].astype(int)
-    data['fips'] = data['fips'].astype(int)
     data['house_age'] = data['house_age'].astype(int)
     
     return data
@@ -93,6 +91,10 @@ def split(df, stratify_by=None):
 
 
 def seperate_y(train, validate, test):
+    '''
+    This function will take the train, validate, and test dataframes and seperate the target variable into its
+    own panda series
+    '''
     X_train = train.drop(columns=['tax_value'])
     y_train = train.tax_value
 
